@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Fetches the upstream README, parses it, and writes the two generated
-// data files. Link-checking (WBW-002) and tag/salary-link generation
-// (WBW-003) are not implemented here yet — those fields are written with
+// Fetches the upstream README, parses it, link-checks each entry, and
+// writes the two generated data files. Tag/salary-link generation
+// (WBW-003) is not implemented here yet — those fields are written with
 // their default values per wbw-artifacts/03-lld.md §1.
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { parseReadme } from './lib/parse.mjs';
+import { checkLinks } from './lib/link-check.mjs';
 
 const README_URL =
   'https://raw.githubusercontent.com/poteto/hiring-without-whiteboards/main/README.md';
@@ -14,6 +15,28 @@ const SOURCE_URL = 'https://github.com/poteto/hiring-without-whiteboards';
 // Non-negotiable per LLD §2 — never lower or remove this gate.
 const MIN_COMPANIES = 50;
 
+const COMPANIES_JSON_URL = new URL('../src/data/companies.json', import.meta.url);
+
+// Loads the previous run's output (if any) and carries forward
+// linkStatus/lastVerified by id, so a freshly re-parsed entry (which the
+// parser always writes with default 'unknown'/null) doesn't lose history
+// before the link-checker runs — see LLD §3.
+async function mergePreviousLinkStatus(companies) {
+  let previous;
+  try {
+    previous = JSON.parse(await readFile(COMPANIES_JSON_URL, 'utf-8'));
+  } catch {
+    return companies;
+  }
+
+  const byId = new Map(previous.companies.map((c) => [c.id, c]));
+  return companies.map((company) => {
+    const prev = byId.get(company.id);
+    if (!prev) return company;
+    return { ...company, linkStatus: prev.linkStatus, lastVerified: prev.lastVerified };
+  });
+}
+
 async function main() {
   const res = await fetch(README_URL);
   if (!res.ok) {
@@ -21,7 +44,7 @@ async function main() {
     process.exit(1);
   }
   const markdown = await res.text();
-  const companies = parseReadme(markdown);
+  let companies = parseReadme(markdown);
 
   if (companies.length < MIN_COMPANIES) {
     console.error(
@@ -29,6 +52,14 @@ async function main() {
         `(minimum ${MIN_COMPANIES}). Aborting without publishing.`,
     );
     process.exit(1);
+  }
+
+  companies = await mergePreviousLinkStatus(companies);
+
+  if (process.env.SKIP_LINK_CHECK === '1') {
+    console.log('SKIP_LINK_CHECK=1 set — skipping link-check step.');
+  } else {
+    companies = await checkLinks(companies);
   }
 
   const payload = {
@@ -40,7 +71,7 @@ async function main() {
 
   const json = `${JSON.stringify(payload, null, 2)}\n`;
 
-  await writeFile(new URL('../src/data/companies.json', import.meta.url), json);
+  await writeFile(COMPANIES_JSON_URL, json);
   await mkdir(new URL('../public/api/', import.meta.url), { recursive: true });
   await writeFile(new URL('../public/api/companies.json', import.meta.url), json);
 
