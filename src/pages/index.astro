@@ -17,6 +17,24 @@ for (const company of companies) {
   }
 }
 
+// Tag chips are offered in LLD §4's rule order, restricted to tags that
+// actually occur in the synced data.
+const TAG_ORDER = [
+  'Remote',
+  'Take-home project',
+  'Pair programming',
+  'System design',
+  'Live coding',
+  'Portfolio review',
+  'Culture fit',
+];
+const presentTags = new Set(companies.flatMap((company) => company.tags));
+const allTags = TAG_ORDER.filter((tag) => presentTags.has(tag));
+
+function searchText(company: (typeof companies)[number]) {
+  return `${company.name} ${company.location} ${company.description}`.toLowerCase();
+}
+
 function statusLabel(status: string, lastVerified: string | null) {
   if (status === 'ok') return `Verified ${lastVerified}`;
   if (status === 'broken') {
@@ -37,13 +55,52 @@ function statusLabel(status: string, lastVerified: string | null) {
       </p>
     </header>
 
+    <div class="filter-bar" data-filter-bar>
+      <div class="filter-search">
+        <label class="visually-hidden" for="company-search">Search companies</label>
+        <input
+          type="search"
+          id="company-search"
+          class="search-input"
+          placeholder="Search by name, location, or description"
+          autocomplete="off"
+          data-search-input
+        />
+      </div>
+      {
+        allTags.length > 0 && (
+          <ul class="tag-filter-list" role="group" aria-label="Filter by tag">
+            {allTags.map((tag) => (
+              <li>
+                <button type="button" class="tag-chip" data-tag={tag} aria-pressed="false">
+                  {tag}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      <p class="filter-result-count" data-result-count aria-live="polite">
+        {companies.length} of {companies.length} companies shown
+      </p>
+    </div>
+
+    <p class="filter-empty" data-filter-empty aria-live="polite" hidden>
+      No companies match your search and tag filters. Try removing a filter.
+    </p>
+
     {
       [...sections.entries()].map(([section, entries]) => (
         <section class="section">
           <h2 class="section-heading">{section}</h2>
           <ul class="entry-list">
             {entries.map((company) => (
-              <li class="entry">
+              <li
+                class="entry"
+                data-entry
+                data-search={searchText(company)}
+                data-tags={company.tags.join('|')}
+              >
                 <div class="entry-head">
                   <h3 class="entry-name">
                     <a href={company.url}>{company.name}</a>
@@ -88,3 +145,70 @@ function statusLabel(status: string, lastVerified: string | null) {
     }
   </main>
 </Layout>
+
+<script>
+  const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
+  const tagChips = document.querySelectorAll<HTMLButtonElement>('[data-tag]');
+  const entries = document.querySelectorAll<HTMLElement>('[data-entry]');
+  const resultCount = document.querySelector('[data-result-count]');
+  const emptyState = document.querySelector<HTMLElement>('[data-filter-empty]');
+  const totalCount = entries.length;
+
+  const selectedTags = new Set<string>();
+  let query = '';
+  let debounceTimer: ReturnType<typeof setTimeout>;
+
+  function applyFilters() {
+    let visibleCount = 0;
+
+    entries.forEach((entry) => {
+      const search = entry.dataset.search ?? '';
+      const tags = (entry.dataset.tags ?? '').split('|').filter(Boolean);
+      const matchesQuery = query === '' || search.includes(query);
+      const matchesTags = [...selectedTags].every((tag) => tags.includes(tag));
+      const visible = matchesQuery && matchesTags;
+
+      entry.classList.toggle('hidden', !visible);
+      if (visible) visibleCount += 1;
+    });
+
+    if (resultCount) {
+      resultCount.textContent = `${visibleCount} of ${totalCount} companies shown`;
+    }
+
+    if (!emptyState) return;
+
+    if (visibleCount === 0) {
+      emptyState.hidden = false;
+      requestAnimationFrame(() => emptyState.classList.add('is-visible'));
+    } else {
+      emptyState.classList.remove('is-visible');
+      emptyState.hidden = true;
+    }
+  }
+
+  searchInput?.addEventListener('input', (event) => {
+    const value = (event.target as HTMLInputElement).value;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      query = value.trim().toLowerCase();
+      applyFilters();
+    }, 180);
+  });
+
+  tagChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const tag = chip.dataset.tag;
+      if (!tag) return;
+
+      const isSelected = selectedTags.has(tag);
+      if (isSelected) {
+        selectedTags.delete(tag);
+      } else {
+        selectedTags.add(tag);
+      }
+      chip.setAttribute('aria-pressed', String(!isSelected));
+      applyFilters();
+    });
+  });
+</script>
