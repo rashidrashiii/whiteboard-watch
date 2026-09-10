@@ -31,6 +31,13 @@ const TAG_ORDER = [
 const presentTags = new Set(companies.flatMap((company) => company.tags));
 const allTags = TAG_ORDER.filter((tag) => presentTags.has(tag));
 
+function sectionSlug(section: string) {
+  return `section-${section
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')}`;
+}
+
 function searchText(company: (typeof companies)[number]) {
   return `${company.name} ${company.location} ${company.description}`.toLowerCase();
 }
@@ -85,13 +92,27 @@ function statusLabel(status: string, lastVerified: string | null) {
       </p>
     </div>
 
+    <nav class="section-nav" aria-label="Jump to section">
+      <ul class="section-nav-list">
+        {
+          [...sections.keys()].map((section) => (
+            <li class="section-nav-item" data-section-nav-item={sectionSlug(section)}>
+              <a href={`#${sectionSlug(section)}`} class="section-nav-link">
+                {section}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
     <p class="filter-empty" data-filter-empty aria-live="polite" hidden>
       No companies match your search and tag filters. Try removing a filter.
     </p>
 
     {
       [...sections.entries()].map(([section, entries]) => (
-        <section class="section">
+        <section class="section" id={sectionSlug(section)}>
           <h2 class="section-heading">{section}</h2>
           <ul class="entry-list">
             {entries.map((company) => (
@@ -150,6 +171,7 @@ function statusLabel(status: string, lastVerified: string | null) {
   const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
   const tagChips = document.querySelectorAll<HTMLButtonElement>('[data-tag]');
   const entries = document.querySelectorAll<HTMLElement>('[data-entry]');
+  const sectionEls = document.querySelectorAll<HTMLElement>('.section');
   const resultCount = document.querySelector('[data-result-count]');
   const emptyState = document.querySelector<HTMLElement>('[data-filter-empty]');
   const totalCount = entries.length;
@@ -170,6 +192,17 @@ function statusLabel(status: string, lastVerified: string | null) {
 
       entry.classList.toggle('hidden', !visible);
       if (visible) visibleCount += 1;
+    });
+
+    sectionEls.forEach((sectionEl) => {
+      const sectionEntries = sectionEl.querySelectorAll<HTMLElement>('[data-entry]');
+      const hasVisible = [...sectionEntries].some((entry) => !entry.classList.contains('hidden'));
+      sectionEl.classList.toggle('hidden', !hasVisible);
+
+      const navItem = document.querySelector<HTMLElement>(
+        `[data-section-nav-item="${sectionEl.id}"]`,
+      );
+      navItem?.classList.toggle('hidden', !hasVisible);
     });
 
     if (resultCount) {
