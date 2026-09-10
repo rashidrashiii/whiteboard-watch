@@ -1,0 +1,186 @@
+/*
+  WhiteboardWatch design tokens.
+  All color / type / layout / radius / shadow values for the project live
+  here as CSS custom properties (HLA §8). No component may hard-code a
+  color, font-family, or shadow value outside this file.
+
+  Concept: a developer-facing ledger / index-card catalog, not a marketing
+  site. Ink on paper, hairline rules instead of card shadows, status color
+  tied directly to the data (linkStatus), not used as brand decoration.
+*/
+
+:root {
+  color-scheme: light;
+
+  /* ---- Color ---- */
+  --color-paper: #f6f7f2;         /* page background */
+  --color-paper-band: #e7ebe1;    /* alternating row / recessed surface */
+  --color-ink: #1e2a22;           /* primary text, green-tinted black */
+  --color-ink-soft: #55645a;      /* secondary / meta text */
+  --color-rule: #c3cfbc;          /* hairline dividers */
+  --color-link: #1f5fa8;          /* interactive ink-blue */
+  --color-link-visited: #4a4088;
+  --color-status-ok: #2e7d46;     /* linkStatus: ok (stamp green) */
+  --color-status-broken: #b23a2e; /* linkStatus: broken (oxblood) */
+  --color-status-unknown: #8a7a3d;/* linkStatus: unknown */
+
+  /* ---- Type ---- */
+  --font-serif: "IBM Plex Serif", ui-serif, Georgia, serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 2.75rem;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* ---- Layout ---- */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-24: 6rem;     /* 96px */
+
+  --container-max: 60rem; /* ~960px */
+  --container-padding: var(--space-4);
+
+  /* documented reference for the cross-cutting acceptance bar's test
+     widths; media queries need literal values, not var(), so these exist
+     for JS/documentation use rather than direct @media consumption */
+  --bp-sm: 375px;
+  --bp-md: 768px;
+  --bp-lg: 1280px;
+
+  /* ---- Radius (near-zero: paper and index cards are square-cornered) ---- */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-full: 999px;
+
+  /* ---- Shadow (reserved for focus/elevation, never decoration) ---- */
+  --shadow-none: none;
+  --shadow-focus: 0 0 0 2px var(--color-paper), 0 0 0 4px var(--color-ink);
+
+  /* ---- Motion ---- */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---- Reset ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-weight: var(--weight-regular);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  margin: 0 0 var(--space-4);
+}
+
+h1 {
+  font-size: var(--text-3xl);
+}
+h2 {
+  font-size: var(--text-2xl);
+}
+h3 {
+  font-size: var(--text-xl);
+}
+
+p {
+  margin: 0 0 var(--space-4);
+  max-width: 38rem; /* keep line length under ~80ch on wide viewports */
+}
+
+a {
+  color: var(--color-link);
+  text-underline-offset: 0.15em;
+}
+
+a:visited {
+  color: var(--color-link-visited);
+}
+
+/* mono is used for literal tabular data — urls, dates, tags, status — not
+   as decorative chrome */
+code,
+.mono,
+.tabular-nums {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+hr,
+.rule {
+  border: none;
+  border-top: 1px solid var(--color-rule);
+  margin: var(--space-4) 0;
+}
+
+::selection {
+  background: var(--color-paper-band);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-focus);
+}
+
+.container {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-padding);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
