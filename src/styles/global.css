@@ -184,3 +184,132 @@ hr,
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Ledger page (src/pages/index.astro) ---- */
+
+.page {
+  padding-block: var(--space-12) var(--space-24);
+}
+
+.page-header {
+  margin-bottom: var(--space-12);
+}
+
+.page-lead {
+  color: var(--color-ink-soft);
+  font-size: var(--text-md);
+  max-width: 42rem;
+}
+
+.section {
+  margin-bottom: var(--space-12);
+}
+
+.section-heading {
+  font-size: var(--text-lg);
+  border-bottom: 1px solid var(--color-rule);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry {
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.entry:first-child {
+  padding-top: 0;
+}
+
+.entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+}
+
+.entry-name {
+  font-size: var(--text-md);
+  margin: 0;
+}
+
+.entry-location {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+}
+
+.entry-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+.status-ok {
+  color: var(--color-status-ok);
+}
+
+.status-broken {
+  color: var(--color-status-broken);
+}
+
+.status-unknown {
+  color: var(--color-status-unknown);
+}
+
+.entry-desc {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  max-width: 48rem;
+  margin: var(--space-2) 0 0;
+}
+
+.entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.entry-tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.tag {
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-soft);
+}
+
+.entry-salary {
+  font-size: var(--text-sm);
+  color: var(--color-ink-soft);
+  margin: 0;
+}

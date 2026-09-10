@@ -1,13 +1,90 @@
 ---
-// Placeholder — Story B2 replaces this with the real server-rendered ledger.
+import Layout from '../layouts/Layout.astro';
+import data from '../data/companies.json';
+
+const { companies } = data;
+
+// Group by `section`, preserving first-seen order (the parser already
+// emits entries in upstream README order, so this reproduces the
+// upstream section ordering without re-sorting).
+const sections = new Map<string, typeof companies>();
+for (const company of companies) {
+  const bucket = sections.get(company.section);
+  if (bucket) {
+    bucket.push(company);
+  } else {
+    sections.set(company.section, [company]);
+  }
+}
+
+function statusLabel(status: string, lastVerified: string | null) {
+  if (status === 'ok') return `Verified ${lastVerified}`;
+  if (status === 'broken') {
+    return lastVerified ? `Broken link (last verified ${lastVerified})` : 'Broken link';
+  }
+  return 'Not yet checked';
+}
 ---
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>WhiteboardWatch</title>
-  </head>
-  <body>
-    <p>Scaffold placeholder. Story B2 implements the real page.</p>
-  </body>
-</html>
+
+<Layout>
+  <main class="container page">
+    <header class="page-header">
+      <h1>WhiteboardWatch</h1>
+      <p class="page-lead">
+        {companies.length} companies that skip whiteboard-trivia interviews, synced daily from
+        the community-maintained <a href={data.source}>hiring-without-whiteboards</a> list and
+        checked for dead links.
+      </p>
+    </header>
+
+    {
+      [...sections.entries()].map(([section, entries]) => (
+        <section class="section">
+          <h2 class="section-heading">{section}</h2>
+          <ul class="entry-list">
+            {entries.map((company) => (
+              <li class="entry">
+                <div class="entry-head">
+                  <h3 class="entry-name">
+                    <a href={company.url}>{company.name}</a>
+                  </h3>
+                  {company.location && <span class="entry-location">{company.location}</span>}
+                  <span class={`entry-status status-${company.linkStatus}`}>
+                    <span class="status-dot" aria-hidden="true" />
+                    {statusLabel(company.linkStatus, company.lastVerified)}
+                  </span>
+                </div>
+                {company.description && <p class="entry-desc">{company.description}</p>}
+                {(company.tags.length > 0 ||
+                  company.salaryLinks.levelsFyi ||
+                  company.salaryLinks.glassdoor) && (
+                  <div class="entry-meta">
+                    {company.tags.length > 0 && (
+                      <ul class="entry-tags">
+                        {company.tags.map((tag) => (
+                          <li class="tag">{tag}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {(company.salaryLinks.levelsFyi || company.salaryLinks.glassdoor) && (
+                      <p class="entry-salary">
+                        Search salary:{' '}
+                        {company.salaryLinks.levelsFyi && (
+                          <a href={company.salaryLinks.levelsFyi}>Levels.fyi</a>
+                        )}
+                        {company.salaryLinks.levelsFyi && company.salaryLinks.glassdoor && ', '}
+                        {company.salaryLinks.glassdoor && (
+                          <a href={company.salaryLinks.glassdoor}>Glassdoor</a>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </main>
+</Layout>
