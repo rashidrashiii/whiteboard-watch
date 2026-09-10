@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Fetches the upstream README, parses it, link-checks each entry, and
-// writes the two generated data files. Tag/salary-link generation
-// (WBW-003) is not implemented here yet — those fields are written with
-// their default values per wbw-artifacts/03-lld.md §1.
+// Fetches the upstream README, parses it, infers tags, generates salary
+// links, and link-checks each entry, then writes the two generated data
+// files.
 
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { parseReadme } from './lib/parse.mjs';
+import { inferTags } from './lib/tags.mjs';
+import { buildSalaryLinks } from './lib/salary-links.mjs';
 import { checkLinks } from './lib/link-check.mjs';
 
 const README_URL =
@@ -53,6 +54,12 @@ async function main() {
     );
     process.exit(1);
   }
+
+  companies = companies.map((company) => ({
+    ...company,
+    tags: inferTags(company),
+    salaryLinks: buildSalaryLinks(company.name),
+  }));
 
   companies = await mergePreviousLinkStatus(companies);
 
