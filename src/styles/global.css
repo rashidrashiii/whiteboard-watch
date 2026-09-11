@@ -22,7 +22,7 @@
   --color-link-visited: #4a4088;
   --color-status-ok: #2e7d46;     /* linkStatus: ok (stamp green) */
   --color-status-broken: #b23a2e; /* linkStatus: broken (oxblood) */
-  --color-status-unknown: #8a7a3d;/* linkStatus: unknown */
+  --color-status-unknown: #6e6231;/* linkStatus: unknown (darkened from #8a7a3d to clear 4.5:1 on --color-paper; the original was 3.95:1, failing WCAG AA for the text-xs "Not yet checked" label) */
 
   /* ---- Type ---- */
   --font-serif: "IBM Plex Serif", ui-serif, Georgia, serif;

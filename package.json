@@ -12,5 +12,9 @@
   },
   "dependencies": {
     "astro": "^4.16.0"
+  },
+  "devDependencies": {
+    "axe-core": "^4.13.0",
+    "jsdom": "^30.0.1"
   }
 }
