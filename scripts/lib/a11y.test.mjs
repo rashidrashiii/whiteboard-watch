@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import axeSource from 'axe-core';
@@ -43,36 +45,42 @@ test(
   'build-time: rendered index.html has no automated a11y violations',
   { timeout: 60_000 },
   async () => {
-    execFileSync('npx', ['astro', 'build'], { cwd: ROOT, stdio: 'inherit' });
+    const outDir = await mkdtemp(join(tmpdir(), 'wbw-build-'));
 
-    const html = await readFile(new URL('../../dist/index.html', import.meta.url), 'utf-8');
-    const dom = new JSDOM(html, { url: 'https://whiteboardwatch.dev/' });
+    try {
+      execFileSync('npx', ['astro', 'build', '--outDir', outDir], { cwd: ROOT, stdio: 'inherit' });
 
-    // axe-core's UMD bundle attaches `window.axe` by reading the global
-    // `window`/`document` at eval time, so those globals must be wired to
-    // this jsdom instance BEFORE the eval — otherwise axe silently attaches
-    // to nothing and `dom.window.axe` is undefined.
-    globalThis.window = dom.window;
-    globalThis.document = dom.window.document;
-    dom.window.eval(axeSource.source);
+      const html = await readFile(join(outDir, 'index.html'), 'utf-8');
+      const dom = new JSDOM(html, { url: 'https://whiteboardwatch.dev/' });
 
-    assert.equal(
-      typeof dom.window.axe?.run,
-      'function',
-      'axe-core did not attach to the jsdom window',
-    );
+      // axe-core's UMD bundle attaches `window.axe` by reading the global
+      // `window`/`document` at eval time, so those globals must be wired to
+      // this jsdom instance BEFORE the eval — otherwise axe silently attaches
+      // to nothing and `dom.window.axe` is undefined.
+      globalThis.window = dom.window;
+      globalThis.document = dom.window.document;
+      dom.window.eval(axeSource.source);
 
-    const results = await dom.window.axe.run(dom.window.document, {
-      rules: Object.fromEntries(DISABLED_RULES.map((id) => [id, { enabled: false }])),
-    });
+      assert.equal(
+        typeof dom.window.axe?.run,
+        'function',
+        'axe-core did not attach to the jsdom window',
+      );
 
-    const summarize = (v) =>
-      `${v.id} (${v.help}): ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`;
+      const results = await dom.window.axe.run(dom.window.document, {
+        rules: Object.fromEntries(DISABLED_RULES.map((id) => [id, { enabled: false }])),
+      });
 
-    assert.equal(
-      results.violations.length,
-      0,
-      `expected no a11y violations, found:\n${results.violations.map(summarize).join('\n')}`,
-    );
+      const summarize = (v) =>
+        `${v.id} (${v.help}): ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`;
+
+      assert.equal(
+        results.violations.length,
+        0,
+        `expected no a11y violations, found:\n${results.violations.map(summarize).join('\n')}`,
+      );
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
   },
 );
