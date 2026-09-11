@@ -11,6 +11,6 @@
     "test": "node --test scripts/**/*.test.mjs"
   },
   "dependencies": {
-    "astro": "^4.16.0"
+    "astro": "^7.3.2"
   }
 }
