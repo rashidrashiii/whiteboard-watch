@@ -176,6 +176,36 @@ function statusLabel(status: string, lastVerified: string | null) {
   const emptyState = document.querySelector<HTMLElement>('[data-filter-empty]');
   const totalCount = entries.length;
 
+  const sectionNav = document.querySelector<HTMLElement>('.section-nav');
+  const navLinksBySection = new Map<string, HTMLAnchorElement>();
+  document.querySelectorAll<HTMLAnchorElement>('.section-nav-link').forEach((link) => {
+    const id = link.getAttribute('href')?.slice(1);
+    if (id) navLinksBySection.set(id, link);
+  });
+
+  function setActiveSection(id: string) {
+    navLinksBySection.forEach((link, sectionId) => {
+      if (sectionId === id) {
+        link.setAttribute('aria-current', 'location');
+      } else {
+        link.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  if (sectionNav && 'IntersectionObserver' in window) {
+    const navHeight = sectionNav.offsetHeight;
+    const sectionObserver = new IntersectionObserver(
+      (observerEntries) => {
+        const active = observerEntries.find((entry) => entry.isIntersecting);
+        if (active) setActiveSection(active.target.id);
+      },
+      { rootMargin: `-${navHeight}px 0px -70% 0px`, threshold: 0 },
+    );
+
+    sectionEls.forEach((sectionEl) => sectionObserver.observe(sectionEl));
+  }
+
   const selectedTags = new Set<string>();
   let query = '';
   let debounceTimer: ReturnType<typeof setTimeout>;
@@ -216,9 +246,19 @@ function statusLabel(status: string, lastVerified: string | null) {
       requestAnimationFrame(() => emptyState.classList.add('is-visible'));
     } else {
       emptyState.classList.remove('is-visible');
-      emptyState.hidden = true;
     }
   }
+
+  // `hidden` (display: none) is applied only once the fade-out finishes,
+  // otherwise it cuts the transition off before the browser paints it.
+  document.querySelector<HTMLElement>('[data-filter-empty]')?.addEventListener(
+    'transitionend',
+    (event) => {
+      if (event.propertyName !== 'opacity') return;
+      const target = event.currentTarget as HTMLElement;
+      if (!target.classList.contains('is-visible')) target.hidden = true;
+    },
+  );
 
   searchInput?.addEventListener('input', (event) => {
     const value = (event.target as HTMLInputElement).value;
